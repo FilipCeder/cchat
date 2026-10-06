@@ -47,7 +47,13 @@ handle(St, {message_send, Channel, Msg}) ->
 % This case is only relevant for the distinction assignment!
 % Change nick (no check, local only)
 handle(St, {nick, NewNick}) ->
-    {reply, ok, St#client_st{nick = NewNick}} ;
+    case genserver:request(St#client_st.server, {nick, self(), NewNick}) of
+        ok ->
+            {reply, ok, St#client_st{nick = NewNick}};
+        Error ->
+            {reply, Error, St}
+    end;
+
 
 % ---------------------------------------------------------------------------
 % The cases below do not need to be changed...
