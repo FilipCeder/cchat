@@ -18,6 +18,16 @@ handle(State, {nick, Pid, NewNick}) ->
         false ->
             NewNicks = maps:put(Pid, NewNick, Nicks),
             {reply, ok, State#{nicks => NewNicks}}
+    end;
+
+handle(State, {join, Channel, Member}) ->
+    Channels = maps:get(channels, State, #{}),
+    Members = maps:get(Channel, Channels, []),
+    case lists:member(Member, Members) of
+        true -> {reply, {error, already_joined, "already_joined"}, State};
+        false ->
+            NewChannels = maps:put(Channel, [Member|Members], Channels),
+            {reply, ok, State#{channels => NewChannels}}
     end.
 
 % Stop the server process registered to the given name,
