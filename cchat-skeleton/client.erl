@@ -29,42 +29,58 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 % Join channel
 handle(St, {join, Channel}) ->
     % TODO: Implement this function
-    case genserver:request(St#client_st.server,{join, Channel, self()}) of
+    try 
+        case genserver:request(St#client_st.server,{join, Channel, self()}) of
         ok ->
             {reply, ok, St};
         Error ->
             {reply, Error, St}
+
+        end
+    catch 
+        _:_ -> {reply, {error, server_not_reached, "server_not_reached"}, St}
     end;
-    
 
 % Leave channel
 handle(St, {leave, Channel}) ->
     % TODO: Implement this function
-    case genserver:request(St#client_st.server,{leave, Channel, self()}) of
-        ok ->
-            {reply, ok, St};
-        Error ->
-            {reply, Error, St}
+    try
+        case genserver:request(St#client_st.server,{leave, Channel, self()}) of
+            ok ->
+                {reply, ok, St};
+            Error ->
+                {reply, Error, St}
+        end
+    catch 
+        _:_ -> {reply, {error, server_not_reached, "server_not_reached"}, St}
     end;
     
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
     % TODO: Implement this function
-    case genserver:request(St#client_st.server,{message_send, Channel, self(),St#client_st.nick,Msg}) of
-        ok ->
-            {reply, ok, St};
-        Error ->
-            {reply, Error, St}
+    try
+        case genserver:request(St#client_st.server,{message_send, Channel, self(),St#client_st.nick,Msg}) of
+            ok ->
+                {reply, ok, St};
+            Error ->
+                {reply, Error, St}
+        end
+    catch 
+        _:_ -> {reply, {error, server_not_reached, "server_not_reached"}, St}
     end;
 
 % This case is only relevant for the distinction assignment!
 % Change nick (no check, local only)
 handle(St, {nick, NewNick}) ->
-    case genserver:request(St#client_st.server, {nick, self(), NewNick}) of
-        ok ->
-            {reply, ok, St#client_st{nick = NewNick}};
-        Error ->
-            {reply, Error, St}
+    try
+        case genserver:request(St#client_st.server, {nick, self(), NewNick}) of
+            ok ->
+                {reply, ok, St#client_st{nick = NewNick}};
+            Error ->
+                {reply, Error, St}
+        end
+    catch 
+        _:_ -> {reply, {error, server_not_reached, "server_not_reached"}, St}
     end;
 
 

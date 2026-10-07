@@ -43,16 +43,26 @@ handle(State, {leave, Channel, Member}) ->
 handle(State, {message_send, Channel, Sender, Nick,Msg}) ->
     Channels = maps:get(channels, State, #{}),
     Members = maps:get(Channel, Channels, []),
-    case lists:member(Sender, Members) of
+    case maps:is_key(Channel,Channels) of
+        false -> {reply, {error, server_not_reached, "not_joined"}, State};
         true ->
-            lists:foreach(
-                fun(Member) -> genserver:request(Member,{message_receive,Channel,Nick,Msg})
-                end,
-                lists:delete(Sender,Members)
-            ),
-            {reply, ok, State};
+            case lists:member(Sender, Members) of
+                true ->
+                    lists:foreach(
+                        fun(Member) -> 
+                            spawn(fun() ->
+                                try genserver:request(Member,{message_receive,Channel,Nick,Msg})
+                                catch 
+                                    _:_ -> {reply, {error, server_not_reached, "server_not_reached"}, State}
+                                end
+                            end)
+                        end,
+                        lists:delete(Sender,Members)
+                    ),
+                    {reply, ok, State};
 
-        false -> {reply, {error, user_not_joined, "not_joined"}, State}
+                false -> {reply, {error, user_not_joined, "not_joined"}, State}
+            end
     end.
 
 
