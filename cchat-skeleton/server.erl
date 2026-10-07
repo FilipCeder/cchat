@@ -24,11 +24,42 @@ handle(State, {join, Channel, Member}) ->
     Channels = maps:get(channels, State, #{}),
     Members = maps:get(Channel, Channels, []),
     case lists:member(Member, Members) of
-        true -> {reply, {error, already_joined, "already_joined"}, State};
+        true -> {reply, {error, user_already_joined, "already_joined"}, State};
         false ->
             NewChannels = maps:put(Channel, [Member|Members], Channels),
             {reply, ok, State#{channels => NewChannels}}
+    end;
+
+handle(State, {leave, Channel, Member}) ->
+    Channels = maps:get(channels, State, #{}),
+    Members = maps:get(Channel, Channels, []),
+    case lists:member(Member, Members) of
+        true ->
+            NewChannels = maps:put(Channel, lists:delete(Member,Members), Channels),
+            {reply, ok, State#{channels => NewChannels}};
+        false -> {reply, {error, user_not_joined, "not_joined"}, State}
+    end;
+
+handle(State, {message_send, Channel, Sender, Nick,Msg}) ->
+    Channels = maps:get(channels, State, #{}),
+    Members = maps:get(Channel, Channels, []),
+    case lists:member(Sender, Members) of
+        true ->
+            lists:foreach(
+                fun(Member) -> genserver:request(Member,{message_receive,Channel,Nick,Msg})
+                end,
+                lists:delete(Sender,Members)
+            ),
+            {reply, ok, State};
+
+        false -> {reply, {error, user_not_joined, "not_joined"}, State}
     end.
+
+
+
+
+
+
 
 % Stop the server process registered to the given name,
 % together with any other associated processes
