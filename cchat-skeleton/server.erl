@@ -31,12 +31,21 @@ handle(State, {join, Channel, Member}) ->
     end;
 
 handle(State, {leave, Channel, Member}) ->
-    Channels = maps:get(channels, State, #{}),
-    Members = maps:get(Channel, Channels, []),
-    case lists:member(Member, Members) of
+    Myself = self(),
+    spawn(fun ()->
+        Channels = maps:get(channels, State, #{}),
+        Members = maps:get(Channel, Channels, []),
+        Myself ! {done, Channels, Members}
+end),
+    receive {done, Channels, Members} ->
+        case lists:member(Member, Members) of
         true ->
-            NewChannels = maps:put(Channel, lists:delete(Member,Members), Channels),
-            {reply, ok, State#{channels => NewChannels}};
+            NewList = lists:delete(Member, Members),
+            io:format("MEMBERS : ~p", [NewList]),
+            NewChannels = maps:put(Channel, NewList, Channels),
+
+            {reply, ok, State#{channels => NewChannels}}
+                end;
         false -> {reply, {error, user_not_joined, "not_joined"}, State}
     end;
 

@@ -29,7 +29,7 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 % Join channel
 handle(St, {join, Channel}) ->
     % TODO: Implement this function
-    try 
+    try
         case genserver:request(St#client_st.server,{join, Channel, self()}) of
         ok ->
             {reply, ok, St};
@@ -45,12 +45,21 @@ handle(St, {join, Channel}) ->
 handle(St, {leave, Channel}) ->
     % TODO: Implement this function
     try
-        case genserver:request(St#client_st.server,{leave, Channel, self()}) of
+        Myself = self(),
+        %case genserver:request(St#client_st.server,{leave, Channel, self()}) of
+        spawn(fun() ->
+            Response = genserver:request(St#client_st.server,{leave, Channel, self()}),
+            Myself ! {finished, Response}
+            end
+        ),
+            receive{finished, Response} ->
+            case Response of
             ok ->
                 {reply, ok, St};
             Error ->
                 {reply, Error, St}
         end
+            end
     catch 
         _:_ -> {reply, {error, server_not_reached, "server_not_reached"}, St}
     end;
