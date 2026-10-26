@@ -10,6 +10,20 @@ start(ServerAtom) ->
     % - Return the process ID
     genserver:start(ServerAtom,#{},fun handle/2).
 
+
+joinhelper(State, {join, Channel, Member}) ->
+    Channels = maps:get(channels, State, #{}),
+    Members = maps:get(Channel, Channels, []),
+    case lists:member(Member, Members) of
+        true -> {error, user_already_joined};
+        false ->
+            NewChannels = maps:put(Channel, [Member|Members], Channels),
+            {ok, State#{channels => NewChannels}}
+    end
+.
+
+
+
 handle(State, {nick, Pid, NewNick}) ->
     Nicks = maps:get(nicks, State, #{}),
     case lists:member(NewNick, maps:values(Nicks)) of
@@ -21,6 +35,8 @@ handle(State, {nick, Pid, NewNick}) ->
     end;
 
 handle(State, {join, Channel, Member}) ->
+    %Tests still fail, just like before. Is this even remotely correct?
+    %Old code, copied from below.
     Channels = maps:get(channels, State, #{}),
     Members = maps:get(Channel, Channels, []),
     case lists:member(Member, Members) of
@@ -29,6 +45,56 @@ handle(State, {join, Channel, Member}) ->
             NewChannels = maps:put(Channel, [Member|Members], Channels),
             {reply, ok, State#{channels => NewChannels}}
     end;
+
+
+
+
+    %Parallelization slides - p22???
+
+
+
+
+
+
+    %From Parallelization slides - p20
+    %Pid = self(),
+    %spawn(fun() ->
+    %    Pid ! {joinhelper(State, {join, Channel, Member})}
+    %      end
+    %),
+    %receive{ {error, user_already_joined} }
+    %    -> {reply, {error, user_already_joined, "already_joined"}, State} end,
+    %receive{ {ok, Result} } ->
+    %    {reply, ok, Result}
+    %end;
+
+
+
+
+    %From Parallelization slides - p18
+    %spawn(fun() ->
+    %    case joinhelper(State, {join, Channel, Member}) of
+    %        {error, user_already_joined} ->
+    %            {reply, {error, user_already_joined, "already_joined"}, State};
+    %        {ok, Result} ->
+    %            {reply, ok, Result}
+    %    end
+    %end
+    %);
+
+
+
+
+
+
+%    Channels = maps:get(channels, State, #{}),
+%    Members = maps:get(Channel, Channels, []),
+%    case lists:member(Member, Members) of
+%        true -> {reply, {error, user_already_joined, "already_joined"}, State};
+%        false ->
+%            NewChannels = maps:put(Channel, [Member|Members], Channels),
+%            {reply, ok, State#{channels => NewChannels}}
+%    end;
 
 handle(State, {leave, Channel, Member}) ->
     Myself = self(),
