@@ -45,7 +45,7 @@ handle(St, {join, Channel}) ->
 handle(St, {leave, Channel}) ->
     % TODO: Implement this function
     try
-        case genserver:request(St#client_st.server,{leave, Channel, self()}) of
+        case genserver:request(list_to_atom(Channel),{leave, self()}) of
             ok ->
                 {reply, ok, St};
             Error ->
@@ -59,7 +59,7 @@ handle(St, {leave, Channel}) ->
 handle(St, {message_send, Channel, Msg}) ->
     % TODO: Implement this function
     try
-        case genserver:request(St#client_st.server,{message_send, Channel, self(),St#client_st.nick,Msg}) of
+        case genserver:request(list_to_atom(Channel),{message_send, Channel, self(),St#client_st.nick,Msg}) of
             ok ->
                 {reply, ok, St};
             Error ->
