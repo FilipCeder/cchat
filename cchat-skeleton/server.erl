@@ -60,10 +60,10 @@ handle(Members, {message_send, Channel, Sender, Nick, Msg}) ->
             lists:foreach(
                 fun(Member) ->
                     spawn(fun() ->
-                        catch genserver:request(
-                            Member,
-                            {message_receive, Channel, Nick, Msg}
-                        )
+                        try genserver:request(Member,{message_receive, Channel, Nick, Msg})
+                        catch 
+                           _:_ -> {reply, {error, server_not_reached, "server_not_reached"}, Members}
+                        end
                     end)
                 end,
                 lists:delete(Sender, Members)
