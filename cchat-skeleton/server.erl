@@ -54,8 +54,7 @@ handle(Members, {leave, Member}) ->
 
 handle(Members, {message_send, Channel, Sender, Nick, Msg}) ->
     case lists:member(Sender, Members) of
-        false ->
-            {reply, {error, user_not_joined, "Not joined"}, Members};
+        
         true ->
             lists:foreach(
                 fun(Member) ->
@@ -68,7 +67,9 @@ handle(Members, {message_send, Channel, Sender, Nick, Msg}) ->
                 end,
                 lists:delete(Sender, Members)
             ),
-            {reply, ok, Members}
+            {reply, ok, Members};
+
+        false -> {reply, {error, user_not_joined, "Not joined"}, Members}
     end;
 
 
