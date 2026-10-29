@@ -30,11 +30,11 @@ handle(State, {join, Channel, Member}) ->
             genserver:start(list_to_atom(Channel),[],fun handle/2)
         end,
     
-    Result = genserver:request(ChannelPid, {join, Member}),
+    Result = genserver:request(ChannelPid, {join_channel, Member}),
     NewChannels = maps:put(Channel, ChannelPid, Channels),
     {reply, Result, State#{channels => NewChannels}};
 
-handle(Members, {join, Member}) ->
+handle(Members, {join_channel, Member}) ->
     case lists:member(Member, Members) of
         true ->
             {reply, {error, user_already_joined, "Already joined"}, Members};
